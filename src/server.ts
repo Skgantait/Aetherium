@@ -2,6 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { handleCreatePaymentIntent, handleWebhook } from "./api/payment";
+import { getOrders, getOrder, getProducts, getProduct } from "./api/orders";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -66,9 +68,65 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+function handleApiRequest(request: Request): Promise<Response> | null {
+  const url = new URL(request.url);
+
+  // Payment Intent endpoint
+  if (url.pathname === "/api/payment/intent" && request.method === "POST") {
+    return handleCreatePaymentIntent(request);
+  }
+
+  // Webhook endpoint
+  if (url.pathname === "/api/webhook" && request.method === "POST") {
+    return handleWebhook(request);
+  }
+
+  // Get all orders for user
+  if (url.pathname.match(/^\/api\/orders$/) && request.method === "GET") {
+    const userId = url.searchParams.get("userId");
+    if (!userId) {
+      return Promise.resolve(
+        new Response(JSON.stringify({ error: "Missing userId" }), {
+          status: 400,
+        })
+      );
+    }
+    return getOrders(userId);
+  }
+
+  // Get single order
+  if (url.pathname.match(/^\/api\/orders\/[^/]+$/) && request.method === "GET") {
+    const orderId = url.pathname.split("/").pop()!;
+    return getOrder(orderId);
+  }
+
+  // Get all products
+  if (url.pathname === "/api/products" && request.method === "GET") {
+    return getProducts();
+  }
+
+  // Get single product
+  if (
+    url.pathname.match(/^\/api\/products\/[^/]+$/) &&
+    request.method === "GET"
+  ) {
+    const productId = url.pathname.split("/").pop()!;
+    return getProduct(productId);
+  }
+
+  return null;
+}
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Handle API requests first
+      const apiResponse = handleApiRequest(request);
+      if (apiResponse) {
+        return await apiResponse;
+      }
+
+      // Fall through to React SSR
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
