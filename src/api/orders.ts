@@ -1,7 +1,8 @@
-import { supabase } from "./db";
+import { getSupabase } from "./db";
 
 export async function getOrders(userId: string) {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("orders")
       .select(
@@ -30,6 +31,7 @@ export async function getOrders(userId: string) {
 
 export async function getOrder(orderId: string) {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("orders")
       .select(
@@ -58,6 +60,7 @@ export async function getOrder(orderId: string) {
 
 export async function getProducts() {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("products")
       .select("*")
@@ -77,6 +80,7 @@ export async function getProducts() {
 
 export async function getProduct(productId: string) {
   try {
+    const supabase = getSupabase();
     const { data, error } = await supabase
       .from("products")
       .select("*")

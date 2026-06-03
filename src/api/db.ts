@@ -1,10 +1,28 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const supabaseUrl =
+  process.env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL || "";
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || import.meta.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-// Server-side client using service role key
-export const supabase = createClient(supabaseUrl, supabaseServiceKey);
+let supabaseClient: SupabaseClient | undefined;
+
+function createSupabaseClient() {
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error(
+      "Supabase configuration is missing. Set VITE_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
+    );
+  }
+
+  return createClient(supabaseUrl, supabaseServiceKey);
+}
+
+export function getSupabase() {
+  if (!supabaseClient) {
+    supabaseClient = createSupabaseClient();
+  }
+  return supabaseClient;
+}
 
 export type Database = {
   public: {

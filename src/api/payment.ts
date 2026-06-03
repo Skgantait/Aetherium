@@ -1,22 +1,28 @@
-import { supabase } from "./db";
-import { createPaymentIntent, constructWebhookEvent, stripe } from "./stripe";
+import { getSupabase } from "./db";
+import { createCheckoutSession, constructWebhookEvent } from "./stripe";
 
 export async function handleCreatePaymentIntent(request: Request) {
   try {
     const body = await request.json();
-    const { amount, userId, orderItems } = body;
+    const { amount, userId, orderItems, email } = body;
+    const url = new URL(request.url);
+    const origin = `${url.protocol}//${url.host}`;
 
-    if (!amount || !userId) {
+    if (!amount || !userId || !email) {
       return new Response(
-        JSON.stringify({ error: "Missing amount or userId" }),
+        JSON.stringify({ error: "Missing amount, userId, or email" }),
         { status: 400 }
       );
     }
 
-    // Create payment intent in Stripe
-    const paymentIntent = await createPaymentIntent(amount, {
+    // Create checkout session in Stripe
+    const session = await createCheckoutSession(amount, origin, {
       userId,
+      email,
+      orderItems: JSON.stringify(orderItems || []),
     });
+
+    const supabase = getSupabase();
 
     // Create order in database
     const { data: order, error } = await supabase
@@ -25,7 +31,7 @@ export async function handleCreatePaymentIntent(request: Request) {
         user_id: userId,
         total: amount,
         status: "pending",
-        stripe_payment_intent_id: paymentIntent.id,
+        stripe_payment_intent_id: session.payment_intent || session.id,
       })
       .select()
       .single();
@@ -50,7 +56,7 @@ export async function handleCreatePaymentIntent(request: Request) {
 
     return new Response(
       JSON.stringify({
-        clientSecret: paymentIntent.client_secret,
+        sessionId: session.id,
         orderId: order.id,
       }),
       { status: 200 }
@@ -75,6 +81,7 @@ export async function handleWebhook(request: Request) {
       const paymentIntent = event.data.object as any;
 
       // Update order status
+      const supabase = getSupabase();
       await supabase
         .from("orders")
         .update({ status: "completed" })
@@ -83,6 +90,7 @@ export async function handleWebhook(request: Request) {
       const paymentIntent = event.data.object as any;
 
       // Update order status
+      const supabase = getSupabase();
       await supabase
         .from("orders")
         .update({ status: "failed" })

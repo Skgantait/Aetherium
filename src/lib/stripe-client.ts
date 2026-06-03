@@ -7,58 +7,36 @@ const stripePromise = loadStripe(
 
 export async function createPaymentSession(
   userId: string,
+  email: string,
   amount: number,
   orderItems: Array<{ product_id: string; quantity: number; price: number }>
 ) {
   try {
-    // Create payment intent on server
     const response = await fetch("/api/payment/intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         userId,
+        email,
         amount,
         orderItems,
       }),
     });
 
-    if (!response.ok) throw new Error("Failed to create payment intent");
+    if (!response.ok) {
+      const errorBody = await response.text();
+      throw new Error(`Failed to create payment session: ${errorBody}`);
+    }
 
-    const { clientSecret, orderId } = await response.json();
+    const { sessionId } = await response.json();
 
     const stripe = await stripePromise;
     if (!stripe) throw new Error("Stripe failed to load");
 
-    // Redirect to checkout
-    const { error } = await stripe.redirectToCheckout({
-      clientSecret,
-      mode: "payment",
-      successUrl: `${window.location.origin}/checkout?success=true&orderId=${orderId}`,
-      cancelUrl: `${window.location.origin}/checkout?success=false`,
-    });
-
+    const { error } = await stripe.redirectToCheckout({ sessionId });
     if (error) throw error;
   } catch (error) {
     console.error("Payment error:", error);
-    throw error;
-  }
-}
-
-// Confirm payment with client secret
-export async function confirmPayment(clientSecret: string) {
-  try {
-    const stripe = await stripePromise;
-    if (!stripe) throw new Error("Stripe failed to load");
-
-    const { paymentIntent, error } = await stripe.retrievePaymentIntent(
-      clientSecret
-    );
-
-    if (error) throw error;
-
-    return paymentIntent;
-  } catch (error) {
-    console.error("Confirm payment error:", error);
     throw error;
   }
 }

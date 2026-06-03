@@ -1,8 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Footer } from "@/components/Footer";
 import { useCart } from "@/lib/cart";
 import { formatINR } from "@/lib/products";
+import { createPaymentSession } from "@/lib/stripe-client";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -16,22 +17,44 @@ export const Route = createFileRoute("/checkout")({
 
 function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
-  const navigate = useNavigate();
   const [placing, setPlacing] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const shipping = items.length ? 1499 : 0;
   const total = subtotal() + shipping;
 
-  const place = (e: React.FormEvent) => {
+  const [error, setError] = useState<string | null>(null);
+
+  const place = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!items.length) return;
     setPlacing(true);
-    setTimeout(() => {
-      const id = "AE-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-      clear();
-      setDone(id);
+    setError(null);
+
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const email = formData.get("email")?.toString() || "";
+
+    if (!email) {
+      setError("Email is required for payment.");
       setPlacing(false);
-    }, 1400);
+      return;
+    }
+
+    try {
+      await createPaymentSession(
+        email,
+        email,
+        total,
+        items.map((item) => ({
+          product_id: item.product.id,
+          quantity: item.qty,
+          price: item.product.price,
+        })),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+      setPlacing(false);
+    }
   };
 
   if (done) {
@@ -62,6 +85,11 @@ function CheckoutPage() {
             Secure the artifacts.
           </h1>
           <form onSubmit={place} className="space-y-10">
+            {error && (
+              <div className="border border-red-500/50 bg-red-500/10 px-4 py-3 rounded text-red-400 text-sm">
+                {error}
+              </div>
+            )}
             <Section title="Contact">
               <Input name="email" type="email" placeholder="Email address" required />
               <Input name="phone" type="tel" placeholder="+91 phone number" required />
