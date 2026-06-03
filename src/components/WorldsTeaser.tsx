@@ -1,11 +1,11 @@
 import minimal from "@/assets/world-minimal.jpg";
-import tokyo from "@/assets/world-tokyo.jpg";
+import india from "@/assets/world-tokyo.jpg";
 import oldmoney from "@/assets/world-oldmoney.jpg";
 import obs from "@/assets/world-obsidian.jpg";
 
 const worlds = [
   { name: "Minimalist", img: minimal, tag: "Pure form" },
-  { name: "Neo tokyo", img: tokyo, tag: "Neon vinyl" },
+  { name: "Neo india", img: india, tag: "Neon vinyl" },
   { name: "Old Money", img: oldmoney, tag: "Marble & gold" },
   { name: "Obsidian Core", img: obs, tag: "Industrial" },
 ];

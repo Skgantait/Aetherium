@@ -71,7 +71,7 @@ function CheckoutPage() {
           </h1>
           <p className="text-muted-foreground mb-10">
             Your order <span className="font-mono text-foreground">{done}</span> has been reserved.
-            A cinematic confirmation has been dispatched to your inbox. Express delivery in 5–7 working days across tokyo.
+            A cinematic confirmation has been dispatched to your inbox. Express delivery in 5–7 working days across india.
           </p>
           <Link to="/shop" className="btn-luxury btn-luxury-filled inline-block">Continue exploring</Link>
         </section>
@@ -115,7 +115,7 @@ function CheckoutPage() {
                 {[
                   ["card", "Card · Visa / Mastercard / Amex"],
                   ["upi", "UPI · GPay / PhonePe / Paytm"],
-                  ["netbanking", "Netbanking · All major tokyon banks"],
+                  ["netbanking", "Netbanking · All major indian banks"],
                   ["cod", "Cash on delivery (₹199 extra)"],
                 ].map(([v, l]) => (
                   <label key={v} className="flex items-center gap-3 border border-white/15 px-4 py-3 cursor-pointer hover:border-accent transition-colors">
@@ -161,7 +161,7 @@ function CheckoutPage() {
           {items.length > 0 && (
             <div className="space-y-3 text-sm font-mono pt-2">
               <Row k="Subtotal" v={formatINR(subtotal())} />
-              <Row k="Shipping (express, tokyo)" v={formatINR(shipping)} />
+              <Row k="Shipping (express, india)" v={formatINR(shipping)} />
               <div className="hairline my-3" />
               <Row k="Total (incl. GST)" v={formatINR(total)} big />
             </div>

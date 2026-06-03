@@ -114,7 +114,7 @@ function ProductPage() {
           <div className="space-y-1">
             {[
               ["Composition", "70% engineered silk, 30% chromium polymer"],
-              ["Construction", "Laser-welded seams. Hand finished in tokyo."],
+              ["Construction", "Laser-welded seams. Hand finished in india."],
               ["Care", "Cold rinse. Air dry. Do not iron the chrome."],
               ["Shipping", "Worldwide express. Carbon-offset."],
             ].map(([t, b]) => (

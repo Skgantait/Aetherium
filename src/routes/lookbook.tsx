@@ -37,7 +37,7 @@ function LookbookPage() {
             </h1>
             <p className="max-w-md mt-8 text-sm text-muted-foreground">
               Twenty-two frames, four cities, one wardrobe. Shot on 35mm between 03:00 and 05:00 across
-              tokyo, Reykjavík, Uyuni and Antwerp.
+              india, Reykjavík, Uyuni and Antwerp.
             </p>
           </div>
         </div>

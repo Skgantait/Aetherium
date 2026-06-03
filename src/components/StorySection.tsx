@@ -58,7 +58,7 @@ export function StorySection() {
               })}
             </h2>
             <p className="mt-10 text-sm text-muted-foreground max-w-md mx-auto">
-              From Biella spinning rooms to tokyo finishing studios. Six artisans, eighteen months,
+              From Biella spinning rooms to india finishing studios. Six artisans, eighteen months,
               one wardrobe.
             </p>
           </div>

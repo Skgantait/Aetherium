@@ -34,7 +34,7 @@ function ManifestoPage() {
       <section className="max-w-[900px] mx-auto px-6 md:px-10 py-24 md:py-32 space-y-12">
         <Tenet n="01" title="One archive. Four worlds.">
           Aethera is not a brand. It is a wardrobe that re-skins itself around the wearer.
-          Midnight City. Neo tokyo. Old Money. Obsidian Core. Same garments, four frequencies.
+          Midnight City. Neo india. Old Money. Obsidian Core. Same garments, four frequencies.
         </Tenet>
         <Tenet n="02" title="Engineered, not decorated.">
           Every seam is a decision. Three-layer welded membranes derived from aerospace work.
@@ -46,8 +46,8 @@ function ManifestoPage() {
           When the count is gone, it is gone. We do not restock the past.
         </Tenet>
         <Tenet n="04" title="Built where the craft lives.">
-          Pattern in Antwerp. Cut in tokyo. Pleat in Como. Finished by hand in our atelier outside
-          Mumbai. Shipped from tokyo to the world.
+          Pattern in Antwerp. Cut in india. Pleat in Como. Finished by hand in our atelier outside
+          Mumbai. Shipped from india to the world.
         </Tenet>
         <Tenet n="05" title="Cinema before commerce.">
           We will release a film before a product page. A scene before a sale. The store is a
