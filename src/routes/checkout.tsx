@@ -4,6 +4,7 @@ import { Footer } from "@/components/Footer";
 import { useCart } from "@/lib/cart";
 import { formatINR } from "@/lib/products";
 import { createPaymentSession } from "@/lib/razorpay-client";
+import { useHydrated } from "@/hooks/use-hydrated";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -17,6 +18,7 @@ export const Route = createFileRoute("/checkout")({
 
 function CheckoutPage() {
   const { items, subtotal, clear } = useCart();
+  const isHydrated = useHydrated();
   const [placing, setPlacing] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const shipping = items.length ? 1499 : 0;
@@ -128,16 +130,16 @@ function CheckoutPage() {
             </Section>
             <button
               type="submit"
-              disabled={!items.length || placing}
+              disabled={!items.length || placing || !isHydrated}
               className="btn-luxury btn-luxury-filled w-full disabled:opacity-40"
             >
-              {placing ? "Reserving…" : `Place order · ${formatINR(total)}`}
+              {placing ? "Reserving…" : isHydrated ? `Place order · ${formatINR(total)}` : `Place order · ${formatINR(0)}`}
             </button>
           </form>
         </div>
 
         <aside className="lg:sticky lg:top-28 self-start space-y-6">
-          <p className="mono-label">/ Your bag · {items.length.toString().padStart(2, "0")}</p>
+          <p className="mono-label">/ Your bag · {isHydrated ? items.length.toString().padStart(2, "0") : "00"}</p>
           {!items.length && (
             <div className="border border-white/10 p-8 text-center">
               <p className="font-display text-2xl mb-3">Your bag is empty.</p>

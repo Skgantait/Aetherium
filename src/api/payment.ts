@@ -17,6 +17,18 @@ export async function handleCreatePaymentIntent(request: Request) {
       );
     }
 
+    // Check environment variables
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      console.error("Missing Razorpay env vars:", {
+        hasKeyId: !!process.env.RAZORPAY_KEY_ID,
+        hasKeySecret: !!process.env.RAZORPAY_KEY_SECRET,
+      });
+      return new Response(
+        JSON.stringify({ error: "Razorpay credentials not configured" }),
+        { status: 500 }
+      );
+    }
+
     // Create Razorpay order
     const razorpayOrder = await createRazorpayOrder({
       amount: Math.round(amount * 100), // Convert to paise
@@ -43,7 +55,10 @@ export async function handleCreatePaymentIntent(request: Request) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Database error:", error);
+      throw error;
+    }
 
     // Add order items
     if (orderItems && Array.isArray(orderItems)) {
@@ -71,8 +86,9 @@ export async function handleCreatePaymentIntent(request: Request) {
     );
   } catch (error) {
     console.error("Payment Intent Error:", error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     return new Response(
-      JSON.stringify({ error: String(error) }),
+      JSON.stringify({ error: errorMessage }),
       { status: 500 }
     );
   }
