@@ -1,25 +1,32 @@
 import { getSupabase } from "./db";
-import { createCheckoutSession, constructWebhookEvent } from "./stripe";
+import {
+  createRazorpayOrder,
+  verifyRazorpayPaymentSignature,
+  fetchRazorpayPayment,
+} from "./razorpay";
 
 export async function handleCreatePaymentIntent(request: Request) {
   try {
     const body = await request.json();
-    const { amount, userId, orderItems, email } = body;
-    const url = new URL(request.url);
-    const origin = `${url.protocol}//${url.host}`;
+    const { amount, userId, orderItems, email, phone } = body;
 
-    if (!amount || !userId || !email) {
+    if (!amount || !userId || !email || !phone) {
       return new Response(
-        JSON.stringify({ error: "Missing amount, userId, or email" }),
+        JSON.stringify({ error: "Missing amount, userId, email, or phone" }),
         { status: 400 }
       );
     }
 
-    // Create checkout session in Stripe
-    const session = await createCheckoutSession(amount, origin, {
-      userId,
-      email,
-      orderItems: JSON.stringify(orderItems || []),
+    // Create Razorpay order
+    const razorpayOrder = await createRazorpayOrder({
+      amount: Math.round(amount * 100), // Convert to paise
+      currency: "INR",
+      receipt: `order_${Date.now()}`,
+      notes: {
+        userId,
+        email,
+        phone,
+      },
     });
 
     const supabase = getSupabase();
@@ -31,7 +38,7 @@ export async function handleCreatePaymentIntent(request: Request) {
         user_id: userId,
         total: amount,
         status: "pending",
-        stripe_payment_intent_id: session.payment_intent || session.id,
+        stripe_payment_intent_id: razorpayOrder.id, // Store Razorpay order ID
       })
       .select()
       .single();
@@ -56,8 +63,9 @@ export async function handleCreatePaymentIntent(request: Request) {
 
     return new Response(
       JSON.stringify({
-        sessionId: session.id,
+        razorpayOrderId: razorpayOrder.id,
         orderId: order.id,
+        keyId: process.env.RAZORPAY_KEY_ID || import.meta.env.VITE_RAZORPAY_KEY_ID,
       }),
       { status: 200 }
     );
@@ -70,39 +78,56 @@ export async function handleCreatePaymentIntent(request: Request) {
   }
 }
 
-export async function handleWebhook(request: Request) {
+export async function handlePaymentVerification(request: Request) {
   try {
-    const signature = request.headers.get("stripe-signature") || "";
-    const body = await request.text();
+    const body = await request.json();
+    const { razorpayOrderId, razorpayPaymentId, razorpaySignature } = body;
 
-    const event = constructWebhookEvent(body, signature);
-
-    if (event.type === "payment_intent.succeeded") {
-      const paymentIntent = event.data.object as any;
-
-      // Update order status
-      const supabase = getSupabase();
-      await supabase
-        .from("orders")
-        .update({ status: "completed" })
-        .eq("stripe_payment_intent_id", paymentIntent.id);
-    } else if (event.type === "payment_intent.payment_failed") {
-      const paymentIntent = event.data.object as any;
-
-      // Update order status
-      const supabase = getSupabase();
-      await supabase
-        .from("orders")
-        .update({ status: "failed" })
-        .eq("stripe_payment_intent_id", paymentIntent.id);
+    if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      return new Response(
+        JSON.stringify({ error: "Missing payment verification details" }),
+        { status: 400 }
+      );
     }
 
-    return new Response(JSON.stringify({ received: true }), { status: 200 });
+    // Verify signature
+    const isSignatureValid = verifyRazorpayPaymentSignature(
+      razorpayOrderId,
+      razorpayPaymentId,
+      razorpaySignature
+    );
+
+    if (!isSignatureValid) {
+      return new Response(
+        JSON.stringify({ error: "Invalid payment signature" }),
+        { status: 400 }
+      );
+    }
+
+    // Fetch payment details
+    const payment = await fetchRazorpayPayment(razorpayPaymentId);
+
+    const supabase = getSupabase();
+
+    // Update order status
+    const { error } = await supabase
+      .from("orders")
+      .update({
+        status: payment.status === "captured" ? "completed" : "failed",
+      })
+      .eq("stripe_payment_intent_id", razorpayOrderId);
+
+    if (error) throw error;
+
+    return new Response(
+      JSON.stringify({ success: true, status: payment.status }),
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Webhook Error:", error);
+    console.error("Payment Verification Error:", error);
     return new Response(
       JSON.stringify({ error: String(error) }),
-      { status: 400 }
+      { status: 500 }
     );
   }
 }

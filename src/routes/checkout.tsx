@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Footer } from "@/components/Footer";
 import { useCart } from "@/lib/cart";
 import { formatINR } from "@/lib/products";
-import { createPaymentSession } from "@/lib/stripe-client";
+import { createPaymentSession } from "@/lib/razorpay-client";
 
 export const Route = createFileRoute("/checkout")({
   head: () => ({
@@ -33,9 +33,10 @@ function CheckoutPage() {
     const form = e.currentTarget;
     const formData = new FormData(form);
     const email = formData.get("email")?.toString() || "";
+    const phone = formData.get("phone")?.toString() || "";
 
-    if (!email) {
-      setError("Email is required for payment.");
+    if (!email || !phone) {
+      setError("Email and phone are required for payment.");
       setPlacing(false);
       return;
     }
@@ -44,6 +45,7 @@ function CheckoutPage() {
       await createPaymentSession(
         email,
         email,
+        phone,
         total,
         items.map((item) => ({
           product_id: item.product.id,

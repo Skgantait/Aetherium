@@ -2,7 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { handleCreatePaymentIntent, handleWebhook } from "./api/payment";
+import { handleCreatePaymentIntent, handlePaymentVerification } from "./api/payment";
 import { getOrders, getOrder, getProducts, getProduct } from "./api/orders";
 
 type ServerEntry = {
@@ -76,9 +76,9 @@ function handleApiRequest(request: Request): Promise<Response> | null {
     return handleCreatePaymentIntent(request);
   }
 
-  // Webhook endpoint
-  if (url.pathname === "/api/webhook" && request.method === "POST") {
-    return handleWebhook(request);
+  // Payment verification endpoint
+  if (url.pathname === "/api/payment/verify" && request.method === "POST") {
+    return handlePaymentVerification(request);
   }
 
   // Get all orders for user
